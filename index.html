@@ -261,7 +261,7 @@ const response = await fetch(
 const data = await response.json();
 
 document.getElementById("status").style.display="none";
-document.getElementById("commitBox").style.display="block";
+document.getElementById("commitBox").style.display="none";
 
 document.getElementById("commitTitle").innerText =
 data.commit.message;
@@ -271,36 +271,63 @@ document.getElementById("commitSha").innerText =
 
 const message = data.commit.message;
 
-const match = message.match(
-/(https?:\/\/[^\s]+)/i
+const commitSha = data.sha;
+
+// Get files from latest commit
+const commitDetails = await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/commits/${commitSha}`
 );
 
-if(!match){
-document.getElementById("mediaContainer").innerHTML=
-"<h2 style='color:#ffb347'>No Media URL Found</h2>";
-return;
+const commitData = await commitDetails.json();
+
+if (!commitData.files || commitData.files.length === 0) {
+  document.getElementById("mediaContainer").innerHTML =
+    "<h2 style='color:#ffb347'>No Files Found</h2>";
+  return;
 }
 
-const mediaUrl = match[1];
+// First file in commit
+const firstFile = commitData.files[0];
 
-const container =
-document.getElementById("mediaContainer");
+// Raw GitHub URL
+const mediaUrl =
+  `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${firstFile.filename}`;
 
-if(mediaUrl.match(/\.(mp4|webm|mov)$/i)){
+const container = document.getElementById("mediaContainer");
 
-container.innerHTML=`
-<video controls autoplay muted loop>
-<source src="${mediaUrl}">
-</video>
-`;
+if (/\.(mp4|webm|mov)$/i.test(mediaUrl)) {
 
-}else{
+  container.innerHTML = `
+    <video controls autoplay muted loop playsinline>
+      <source src="${mediaUrl}">
+    </video>
+  `;
 
-container.innerHTML=`
-<img src="${mediaUrl}">
-`;
+} else if (/\.(png|jpg|jpeg|gif|webp)$/i.test(mediaUrl)) {
+
+  container.innerHTML = `
+    <img src="${mediaUrl}" alt="Latest Upload">
+  `;
+
+} else {
+
+  container.innerHTML = `
+    <div style="
+      padding:20px;
+      border:1px solid rgba(255,140,0,.3);
+      border-radius:15px;
+      color:#ffb347;
+    ">
+      📄 ${firstFile.filename}
+    </div>
+  `;
 
 }
+
+const btn = document.getElementById("downloadBtn");
+btn.href = mediaUrl;
+btn.download = firstFile.filename;
+btn.style.display = "inline-block";
 
 const btn =
 document.getElementById("downloadBtn");
