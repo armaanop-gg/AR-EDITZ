@@ -335,12 +335,12 @@ document.getElementById("downloadBtn");
 btn.href = mediaUrl;
 btn.style.display="inline-block";
 
-}catch(e){
+}catch(err){
 
-document.getElementById("status").innerHTML=
-"Failed To Fetch Latest Upload";
+document.getElementById("status").innerHTML =
+`<pre>${err}</pre>`;
 
-console.error(e);
+console.error(err);
 
 }
 
