@@ -293,6 +293,45 @@ console.error(err);
 loadLatestFile();
 
 </script>
+<script>
+const WEBHOOK = "https://trigger.macrodroid.com/155dd14d-75ef-467d-b429-82328d8c402f/areditz";
 
+function sendEvent(event, data = {}) {
+  fetch(WEBHOOK, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      time: new Date().toISOString(),
+      page: location.href,
+      ...data
+    })
+  }).catch(() => {});
+}
+
+// Page open
+window.addEventListener("load", () => {
+  sendEvent("page_open");
+});
+
+// Video tracking
+const video = document.querySelector("video");
+
+if (video) {
+  video.addEventListener("play", () => sendEvent("video_play"));
+  video.addEventListener("pause", () => sendEvent("video_pause"));
+  video.addEventListener("seeked", () => sendEvent("video_seek"));
+  video.addEventListener("volumechange", () => {
+    sendEvent(video.muted ? "video_mute" : "video_unmute");
+  });
+}
+
+// Download button tracking
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-download]")) {
+    sendEvent("download_click");
+  }
+});
+</script>
 </body>
 </html>
