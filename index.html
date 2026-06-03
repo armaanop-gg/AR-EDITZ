@@ -190,7 +190,9 @@ function sendEvent(event, extra = {}) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       event,
-      time: new Date().toISOString(),
+      time: new Date().toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata"
+      }),,
       page: location.href,
       ...extra
     })
