@@ -176,12 +176,42 @@ Powered By ARMAAN :)
 </div>
 
 </div>
-
 <script>
 
 const OWNER = "armaanop-gg";
 const REPO = "AR-EDITZ";
 const BRANCH = "edits";
+
+const WEBHOOK = "https://trigger.macrodroid.com/155dd14d-75ef-467d-b429-82328d8c402f/areditz";
+
+function sendEvent(event, extra = {}) {
+  fetch(WEBHOOK, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      time: new Date().toISOString(),
+      page: location.href,
+      ...extra
+    })
+  }).catch(() => {});
+}
+
+window.addEventListener("load", () => {
+  sendEvent("page_open");
+});
+
+function attachVideoEvents() {
+  const video = document.querySelector("video");
+  if (!video) return;
+
+  video.addEventListener("play", () => sendEvent("video_play"));
+  video.addEventListener("pause", () => sendEvent("video_pause"));
+  video.addEventListener("seeked", () => sendEvent("video_seek"));
+  video.addEventListener("volumechange", () => {
+    sendEvent(video.muted ? "video_mute" : "video_unmute");
+  });
+}
 
 async function loadLatestFile(){
 
@@ -191,44 +221,22 @@ const downloadBtn = document.getElementById("downloadBtn");
 
 try{
 
-// Latest commit on edits branch
 const commitsRes = await fetch(
 `https://api.github.com/repos/${OWNER}/${REPO}/commits?sha=${BRANCH}&per_page=1`
 );
 
-if(!commitsRes.ok){
-throw new Error("Cannot access repository");
-}
-
 const commits = await commitsRes.json();
-
-if(!commits.length){
-throw new Error("No commits found");
-}
-
 const latestCommit = commits[0];
 
-// Commit details
 const commitRes = await fetch(latestCommit.url);
-
-if(!commitRes.ok){
-throw new Error("Cannot load commit details");
-}
-
 const commitData = await commitRes.json();
 
-if(!commitData.files || !commitData.files.length){
-throw new Error("No files found in latest commit");
-}
-
-// First file
 const file = commitData.files[0];
 
 const rawUrl =
 `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.filename}`;
 
-const githubDownload =
-`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.filename}`;
+const githubDownload = rawUrl;
 
 status.style.display = "none";
 
@@ -236,56 +244,41 @@ let html = "";
 
 if(/\.(mp4|webm|mov|m4v)$/i.test(file.filename)){
 
-html += `
-<video
-controls
-playsinline
-preload="metadata"
->
+html = `
+<video controls playsinline preload="metadata">
 <source src="${rawUrl}">
 </video>
 `;
 
 }else if(/\.(png|jpg|jpeg|gif|webp)$/i.test(file.filename)){
 
-html += `
-<img
-src="${rawUrl}"
-loading="lazy"
-alt="Latest Upload">
+html = `
+<img src="${rawUrl}" loading="lazy" alt="Latest Upload">
 `;
 
 }else{
 
-html += `
-<div class="filename">
-📄 Preview unavailable
-</div>
-`;
+html = `<div class="filename">Preview unavailable</div>`;
 }
 
-html += `
-<div class="filename">
-📁 ${file.filename}
-</div>
-`;
+html += `<div class="filename">📁 ${file.filename}</div>`;
 
 media.innerHTML = html;
+
+// IMPORTANT FIX
+attachVideoEvents();
 
 downloadBtn.href = githubDownload;
 downloadBtn.target = "_blank";
 downloadBtn.style.display = "block";
 
+// track download click
+downloadBtn.addEventListener("click", () => {
+  sendEvent("download_click");
+});
+
 }catch(err){
-
-status.innerHTML = `
-<div class="error">
-${err.message}
-</div>
-`;
-
-console.error(err);
-
+status.innerHTML = `<div class="error">${err.message}</div>`;
 }
 
 }
@@ -293,45 +286,6 @@ console.error(err);
 loadLatestFile();
 
 </script>
-<script>
-const WEBHOOK = "https://trigger.macrodroid.com/155dd14d-75ef-467d-b429-82328d8c402f/areditz";
 
-function sendEvent(event, data = {}) {
-  fetch(WEBHOOK, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      event,
-      time: new Date().toISOString(),
-      page: location.href,
-      ...data
-    })
-  }).catch(() => {});
-}
-
-// Page open
-window.addEventListener("load", () => {
-  sendEvent("page_open");
-});
-
-// Video tracking
-const video = document.querySelector("video");
-
-if (video) {
-  video.addEventListener("play", () => sendEvent("video_play"));
-  video.addEventListener("pause", () => sendEvent("video_pause"));
-  video.addEventListener("seeked", () => sendEvent("video_seek"));
-  video.addEventListener("volumechange", () => {
-    sendEvent(video.muted ? "video_mute" : "video_unmute");
-  });
-}
-
-// Download button tracking
-document.addEventListener("click", (e) => {
-  if (e.target.closest("[data-download]")) {
-    sendEvent("download_click");
-  }
-});
-</script>
 </body>
 </html>
