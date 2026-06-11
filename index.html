@@ -229,7 +229,7 @@ const latestCommit = commits[0];
 
 const commitRes = await fetch(latestCommit.url);
 const commitData = await commitRes.json();
-
+const commitTitle = latestCommit.commit.message;
 const file = commitData.files[0];
 
 const rawUrl =
